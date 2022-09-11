@@ -1,0 +1,19 @@
+{
+    "name": "liam/basic-router",
+    "description": "A basic router",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Liam\\BasicRouter\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Liam",
+            "email": "liamrabe@hotmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {}
+}
