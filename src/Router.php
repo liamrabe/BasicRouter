@@ -10,7 +10,7 @@ use RuntimeException;
 
 class Router {
 
-	protected const VERSION = '1.0.0';
+	protected const VERSION = '2.0.0';
 
 	protected static array $controller;
 	protected static array $middleware;
