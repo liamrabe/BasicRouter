@@ -82,7 +82,7 @@ class Router {
 		}
 	}
 
-	/** @throws InvalidArgumentException */
+	/** @throws RuntimeException */
 	protected static function route(string $method, string $uri, string|array|callable $callback): Route {
 		if (self::$uri !== '') {
 			$uri = sprintf('%s/%s', self::$uri, ltrim($uri, '/'));
@@ -90,12 +90,12 @@ class Router {
 
 		$middleware = self::$middleware ?? null;
 		if (!$middleware) {
-			throw new InvalidArgumentException('Middleware required before creating routes', 500);
+			throw new RuntimeException('Middleware required before creating routes', 500);
 		}
 
 		$controller = self::$controller ?? null;
 		if (!$controller) {
-			throw new InvalidArgumentException('Error controller required before creating routes', 500);
+			throw new RuntimeException('Error controller required before creating routes', 500);
 		}
 
 		return self::$routes[] = Route::create($method, $uri, $callback, $middleware[0]);
@@ -182,7 +182,7 @@ class Router {
 			$route = end($matched_routes);
 
 			if (empty($matched_routes) && is_bool($route) && !$route) {
-				throw new InvalidArgumentException(sprintf(
+				throw new HttpException(sprintf(
 					"The requested URI '%s' doesn't exist",
 					self::getURI(),
 				), 404);
@@ -204,7 +204,7 @@ class Router {
 				$response = new Response();
 
 				if (!method_exists($callback[0] ?? '', $callback[1] ?? '')) {
-					throw new InvalidArgumentException(sprintf(
+					throw new RuntimeException(sprintf(
 						"Callback method '%s' doesn't exist in class %s",
 						$callback[1] ?? '',
 						$callback[0] ?? '',
@@ -216,7 +216,7 @@ class Router {
 			}
 
 			self::handleOutput($response);
-		} catch (InvalidArgumentException $ex) {
+		} catch (HttpException|RuntimeException $ex) {
 			$response = call_user_func_array(self::$controller, [
 				$ex->getMessage(),
 				$ex->getCode(),
@@ -227,11 +227,11 @@ class Router {
 	}
 
 	/**
-	 * @throws InvalidArgumentException
+	 * @throws RuntimeException
 	 */
 	protected static function handleOutput(object $response): void {
 		if (!$response instanceof Response) {
-			throw new InvalidArgumentException(sprintf(
+			throw new RuntimeException(sprintf(
 				"Response has to be instance of class '%s'",
 				Response::class,
 			), 500);
