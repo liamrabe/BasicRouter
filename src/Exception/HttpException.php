@@ -1,5 +1,5 @@
 <?php
-namespace Liam\BasicRouter\Exception;
+namespace LiamRabe\BasicRouter\Exception;
 
 use RuntimeException;
 

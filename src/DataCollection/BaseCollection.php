@@ -1,5 +1,5 @@
 <?php
-namespace Liam\BasicRouter\DataCollection;
+namespace LiamRabe\BasicRouter\DataCollection;
 
 abstract class BaseCollection {
 

@@ -1,5 +1,5 @@
 <?php
-namespace Liam\BasicRouter\HTTP\Entity;
+namespace LiamRabe\BasicRouter\HTTP\Entity;
 
 class Post extends BaseEntity {
 

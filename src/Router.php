@@ -1,8 +1,9 @@
 <?php
-namespace Liam\BasicRouter;
+namespace LiamRabe\BasicRouter;
 
-use Liam\BasicRouter\DataCollection\Response;
-use Liam\BasicRouter\DataCollection\Request;
+use LiamRabe\BasicRouter\DataCollection\Response;
+use LiamRabe\BasicRouter\Exception\HttpException;
+use LiamRabe\BasicRouter\DataCollection\Request;
 use JetBrains\PhpStorm\ArrayShape;
 use InvalidArgumentException;
 use RuntimeException;

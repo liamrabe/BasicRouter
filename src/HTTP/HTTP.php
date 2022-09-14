@@ -1,5 +1,5 @@
 <?php
-namespace Liam\BasicRouter\HTTP;
+namespace LiamRabe\BasicRouter\HTTP;
 
 class HTTP {
 
