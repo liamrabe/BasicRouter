@@ -23,6 +23,13 @@ class Router {
 
 	/** @throws InvalidArgumentException */
 	public static function setMiddleware(string $middleware, string $method): void {
+		if (!class_exists($middleware)) {
+			throw new InvalidArgumentException(sprintf(
+				"Class '%s' doesn't exist",
+				$middleware,
+			));
+		}
+
 		if (!method_exists($middleware, $method)) {
 			throw new InvalidArgumentException(sprintf(
 				"Method '%s' doesn't exist in class %s",
@@ -39,6 +46,13 @@ class Router {
 
 	/** @throws InvalidArgumentException */
 	public static function setErrorController(string $controller, string $method): void {
+		if (!class_exists($controller)) {
+			throw new InvalidArgumentException(sprintf(
+				"Class '%s' doesn't exist",
+				$controller,
+			));
+		}
+
 		if (!method_exists($controller, $method)) {
 			throw new InvalidArgumentException(sprintf(
 				"Method '%s' doesn't exist in class %s",
