@@ -218,8 +218,7 @@ class Router {
 			self::handleOutput($response);
 		} catch (HttpException|RuntimeException $ex) {
 			$response = call_user_func_array(self::$controller, [
-				$ex->getMessage(),
-				$ex->getCode(),
+				$ex
 			]);
 
 			self::handleOutput($response);
