@@ -1,7 +1,7 @@
 # BasicRouter
 A basic router
 
-## Install
+## Basic Install
 
 ```bash
 composer require liamrabe/basic-router
@@ -70,10 +70,10 @@ try {
 }
 ```
 
-## Documentation
+## Basic Documentation
 BasicRouter supports `GET`, `PUT`, `POST` and `DELETE`
 
-### HTTP Methods
+### Basic HTTP Methods
 
 **All**
 
@@ -102,7 +102,7 @@ Router::post('/', [AbstractController::class, 'handleRoute']);
 Router::delete('/', [AbstractController::class, 'handleRoute']);
 ```
 
-### General methods
+### Basic General methods
 
 **Redirect**
 ````php
