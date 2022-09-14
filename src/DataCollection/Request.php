@@ -1,10 +1,10 @@
 <?php
-namespace Liam\BasicRouter\DataCollection;
+namespace LiamRabe\BasicRouter\DataCollection;
 
-use Liam\BasicRouter\HTTP\Entity\Server;
-use Liam\BasicRouter\HTTP\Entity\Cookie;
-use Liam\BasicRouter\HTTP\Entity\Post;
-use Liam\BasicRouter\HTTP\Entity\Get;
+use LiamRabe\BasicRouter\HTTP\Entity\Server;
+use LiamRabe\BasicRouter\HTTP\Entity\Cookie;
+use LiamRabe\BasicRouter\HTTP\Entity\Post;
+use LiamRabe\BasicRouter\HTTP\Entity\Get;
 
 class Request {
 

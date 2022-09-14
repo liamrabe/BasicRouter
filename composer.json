@@ -1,11 +1,11 @@
 {
-    "name": "liam/basic-router",
+    "name": "liamrabe/basic-router",
     "description": "A basic router",
     "type": "library",
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "Liam\\BasicRouter\\": "src/"
+            "LiamRabe\\BasicRouter\\": "src/"
         }
     },
     "authors": [

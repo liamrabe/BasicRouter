@@ -1,7 +1,7 @@
 <?php
-namespace Liam\BasicRouter\DataCollection;
+namespace LiamRabe\BasicRouter\DataCollection;
 
-use Liam\BasicRouter\Router as Router;
+use LiamRabe\BasicRouter\Router as Router;
 
 class Response {
 

@@ -1,7 +1,7 @@
 <?php
-namespace Liam\BasicRouter;
+namespace LiamRabe\BasicRouter;
 
-use Liam\BasicRouter\DataCollection\Parameters;
+use LiamRabe\BasicRouter\DataCollection\Parameters;
 
 class Route {
 

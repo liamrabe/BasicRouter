@@ -4,7 +4,7 @@ A basic router
 ## Install
 
 ```bash
-composer require liam/basic-router
+composer require liamrabe/basic-router
 ```
 
 ## Basic usage
