@@ -10,11 +10,11 @@ composer require liamrabe/basic-router
 ## Basic usage
 
 ```php
-use Liam\BasicRouter\Middleware\AbstractMiddleware;
-use Liam\BasicRouter\Controller\AbstractErrorController;
-use Liam\BasicRouter\DataCollection\Response;
-use Liam\BasicRouter\DataCollection\Request;
-use Liam\BasicRouter as Router;
+use LiamRabe\BasicRouter\Middleware\AbstractMiddleware;
+use LiamRabe\BasicRouter\Controller\AbstractErrorController;
+use LiamRabe\BasicRouter\DataCollection\Response;
+use LiamRabe\BasicRouter\DataCollection\Request;
+use LiamRabe\BasicRouter as Router;
 
 class APIMiddleware {
 	
