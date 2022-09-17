@@ -1,7 +1,7 @@
 <?php
 namespace LiamRabe\BasicRouter\HTTP;
 
-class HTTP {
+final class HTTP {
 
 	public const STATUS_CONTINUE = 100;
 	public const STATUS_SWITCHING_PROTOCOLS = 101;
