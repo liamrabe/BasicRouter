@@ -239,11 +239,19 @@ class Router {
 		/* Process response from controller */
 		http_response_code($response->getStatus());
 
+		static::preHeaders($route, $request, $response);
+
 		foreach ($response->getHeaders() as $header => $value) {
 			header(sprintf('%s: %s', $header, $value), true, $response->getStatus());
 		}
 
+		static::postHeaders($route, $request, $response);
+
+		static::preWrite($route, $request, $response);
+
 		echo $response->getBody();
+
+		static::postWrite($route, $request, $response);
 	}
 
 	/** Version handling */
@@ -283,5 +291,27 @@ class Router {
 			static::getPatch(),
 		);
 	}
+
+	/** Lifecycle events */
+
+	/**
+	 * Handle Route, Request & Response before output
+	 */
+	protected static function preWrite(Route $route, Request $request, Response $response): void {}
+
+	/**
+	 * Handle Route, Request & Response after output
+	 */
+	protected static function postWrite(Route $route, Request $request, Response $response): void {}
+
+	/**
+	 * Handle Route, Request & Response before handling headers
+	 */
+	protected static function preHeaders(Route $route, Request $request, Response $response): void {}
+
+	/**
+	 * Handle Route, Request & Response after handling headers
+	 */
+	protected static function postHeaders(Route $route, Request $request, Response $response): void {}
 
 }
