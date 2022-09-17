@@ -33,9 +33,9 @@ class Regex {
 		return $groups;
 	}
 
-	public static function all(string $pattern, string $subject): self {
+	public static function all(string $pattern, string $subject): static {
 		$match_count = preg_match_all($pattern, $subject, $match_groups);
-		return new self($match_count, self::normalize($match_groups));
+		return new static($match_count, static::normalize($match_groups));
 	}
 
 }

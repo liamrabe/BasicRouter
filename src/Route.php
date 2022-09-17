@@ -31,7 +31,7 @@ class Route {
 }
 
 	public function getArguments(bool $raw = false): array|Parameters {
-		$regex = Regex::all(self::ARGUMENT_SEARCH, $this->getURI());
+		$regex = Regex::all(static::ARGUMENT_SEARCH, $this->getURI());
 		$matches = [];
 
 		if ($regex->getCount() > 0) {
@@ -75,8 +75,8 @@ class Route {
 
 	/* Static methods */
 
-	public static function create(string $method, string $uri, string|array|Callable $callback, string $middleware): self {
-		return new self($method, $uri, $callback, $middleware);
+	public static function create(string $method, string $uri, string|array|Callable $callback, string $middleware): static {
+		return new static($method, $uri, $callback, $middleware);
 	}
 
 }

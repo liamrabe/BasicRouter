@@ -38,7 +38,7 @@ class Router {
 			));
 		}
 
-		self::$middleware = [
+		static::$middleware = [
 			$middleware,
 			$method,
 		];
@@ -61,22 +61,22 @@ class Router {
 			));
 		}
 
-		self::$controller = [
+		static::$controller = [
 			$controller,
 			$method,
 		];
 	}
 
 	public static function setExposeRouter(bool $expose): void {
-		self::$expose_router = $expose;
+		static::$expose_router = $expose;
 	}
 
 	public static function getExposeRouter(): bool {
-		return self::$expose_router;
+		return static::$expose_router;
 	}
 
 	public static function redirect(string $uri, string $target, int $code = 301): void {
-		if (self::getURI() === $uri) {
+		if (static::getURI() === $uri) {
 			header(sprintf('Location: %s', $target), true,  $code);
 			exit;
 		}
@@ -84,56 +84,56 @@ class Router {
 
 	/** @throws RuntimeException */
 	protected static function route(string $method, string $uri, string|array|callable $callback): Route {
-		if (self::$uri !== '') {
-			$uri = sprintf('%s/%s', self::$uri, ltrim($uri, '/'));
+		if (static::$uri !== '') {
+			$uri = sprintf('%s/%s', static::$uri, ltrim($uri, '/'));
 		}
 
-		$middleware = self::$middleware ?? null;
+		$middleware = static::$middleware ?? null;
 		if (!$middleware) {
 			throw new RuntimeException('Middleware required before creating routes', 500);
 		}
 
-		$controller = self::$controller ?? null;
+		$controller = static::$controller ?? null;
 		if (!$controller) {
 			throw new RuntimeException('Error controller required before creating routes', 500);
 		}
 
-		return self::$routes[] = Route::create($method, $uri, $callback, $middleware[0]);
+		return static::$routes[] = Route::create($method, $uri, $callback, $middleware[0]);
 	}
 
 	public static function get(string $uri, string|array|callable $callback): Route {
-		return self::route('GET', $uri, $callback);
+		return static::route('GET', $uri, $callback);
 	}
 
 	public static function put(string $uri, string|array|callable $callback): Route {
-		return self::route('PUT', $uri, $callback);
+		return static::route('PUT', $uri, $callback);
 	}
 
 	public static function post(string $uri, string|array|callable $callback): Route {
-		return self::route('POST', $uri, $callback);
+		return static::route('POST', $uri, $callback);
 	}
 
 	public static function delete(string $uri, string|array|callable $callback): Route {
-		return self::route('DELETE', $uri, $callback);
+		return static::route('DELETE', $uri, $callback);
 	}
 
 	public static function all(string $uri, string|array|callable $callback): Route {
-		return self::route('ALL', $uri, $callback);
+		return static::route('ALL', $uri, $callback);
 	}
 
 	public static function group(string $prefix, Callable $group_callable, array $group_middleware = []): void {
-		self::$uri .= $prefix;
+		static::$uri .= $prefix;
 
 		if ($group_middleware !== []) {
-			$cache_middleware = self::$middleware;
-			self::setMiddleware($group_middleware[0] ?? '', $group_middleware[1] ?? '');
+			$cache_middleware = static::$middleware;
+			static::setMiddleware($group_middleware[0] ?? '', $group_middleware[1] ?? '');
 		}
 
 		call_user_func($group_callable);
-		self::$uri = rtrim(self::$uri, $prefix);
+		static::$uri = rtrim(static::$uri, $prefix);
 
 		if ($group_middleware !== []) {
-			self::setMiddleware($cache_middleware[0] ?? '', $cache_middleware[1] ?? '');
+			static::setMiddleware($cache_middleware[0] ?? '', $cache_middleware[1] ?? '');
 			unset($cache_middleware);
 		}
 	}
@@ -149,13 +149,13 @@ class Router {
 
 	/** @return Route[] */
 	public static function getRoutes(): array {
-		return self::$routes;
+		return static::$routes;
 	}
 
 	public static function run(): void {
 		try {
-			$routes = array_filter(self::$routes, static function(Route $route) {
-				return ($route->getMethod() === self::getMethod() || $route->getMethod() === 'ALL');
+			$routes = array_filter(static::$routes, static function(Route $route) {
+				return ($route->getMethod() === static::getMethod() || $route->getMethod() === 'ALL');
 			});
 
 			/** @var Route[] $matched_routes */
@@ -164,11 +164,11 @@ class Router {
 			foreach ($routes as $route) {
 				$route_uri = $route->getRegexURI();
 
-				$uri_match_count = preg_match_all(sprintf('/%s/', $route_uri), self::getURI(), $uri_matches);
+				$uri_match_count = preg_match_all(sprintf('/%s/', $route_uri), static::getURI(), $uri_matches);
 
 				if ($uri_match_count > 0) {
 					foreach ($uri_matches as $uri_match) {
-						if (($uri_match[0] ?? '') === self::getURI()) {
+						if (($uri_match[0] ?? '') === static::getURI()) {
 							$matched_routes[] = $route;
 						}
 					}
@@ -184,7 +184,7 @@ class Router {
 			if (empty($matched_routes) && is_bool($route) && !$route) {
 				throw new HttpException(sprintf(
 					"The requested URI '%s' doesn't exist",
-					self::getURI(),
+					static::getURI(),
 				), 404);
 			}
 
@@ -192,13 +192,13 @@ class Router {
 				$callback = $route->getCallback();
 
 				/* Run middleware */
-				$middleware_result = call_user_func(self::$middleware);
+				$middleware_result = call_user_func(static::$middleware);
 
 				if (!$middleware_result) {
 					return;
 				}
 
-				$arguments = $route->getParameters(self::getURI());
+				$arguments = $route->getParameters(static::getURI());
 
 				$request = Request::createFromGlobals($arguments);
 				$response = new Response();
@@ -215,13 +215,13 @@ class Router {
 				}
 			}
 
-			self::handleOutput($response);
+			static::handleOutput($response);
 		} catch (HttpException|RuntimeException $ex) {
-			$response = call_user_func_array(self::$controller, [
+			$response = call_user_func_array(static::$controller, [
 				$ex
 			]);
 
-			self::handleOutput($response);
+			static::handleOutput($response);
 		}
 	}
 
@@ -254,7 +254,7 @@ class Router {
 		'patch' => 'int',
 	])]
 	public static function getSemVer(): array {
-		$semantic_version = explode('.', self::VERSION);
+		$semantic_version = explode('.', static::VERSION);
 
 		return [
 			'major' => (int) $semantic_version[0] ?? 0,
@@ -264,23 +264,23 @@ class Router {
 	}
 
 	public static function getMajor():int {
-		return self::getSemVer()['major'];
+		return static::getSemVer()['major'];
 	}
 
 	public static function getMinor(): int {
-		return self::getSemVer()['minor'];
+		return static::getSemVer()['minor'];
 	}
 
 	public static function getPatch(): int {
-		return self::getSemVer()['patch'];
+		return static::getSemVer()['patch'];
 	}
 
 	public static function getVersion(): string {
 		return sprintf(
 			'v%d.%d.%d',
-			self::getMajor(),
-			self::getMinor(),
-			self::getPatch(),
+			static::getMajor(),
+			static::getMinor(),
+			static::getPatch(),
 		);
 	}
 
