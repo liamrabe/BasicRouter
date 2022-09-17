@@ -240,7 +240,7 @@ class Router {
 		/* Process response from controller */
 		http_response_code($response->getStatus());
 
-		if (self::$skip_lifecycle && !$is_error) {
+		if (!self::$skip_lifecycle && !$is_error) {
 			static::preHeaders($route, $request, $response);
 		}
 
@@ -248,14 +248,14 @@ class Router {
 			header(sprintf('%s: %s', $header, $value), true, $response->getStatus());
 		}
 
-		if (self::$skip_lifecycle && !$is_error) {
+		if (!self::$skip_lifecycle && !$is_error) {
 			static::postHeaders($route, $request, $response);
 			static::preWrite($route, $request, $response);
 		}
 
 		echo $response->getBody();
 
-		if (self::$skip_lifecycle && !$is_error) {
+		if (!self::$skip_lifecycle && !$is_error) {
 			static::postWrite($route, $request, $response);
 		}
 	}
