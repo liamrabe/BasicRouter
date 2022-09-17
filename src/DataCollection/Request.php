@@ -13,7 +13,7 @@ class Request {
 		protected Post $post,
 		protected Cookie $cookies,
 		protected Server $server,
-		protected Parameters $named_parameters,
+		protected ?Parameters $named_parameters = null,
 		protected ?string $body = null
 	) {}
 
@@ -37,13 +37,17 @@ class Request {
 		return $this->named_parameters;
 	}
 
+	public function setParameters(Parameters $parameters): void {
+		$this->named_parameters = $parameters;
+	}
+
 	public function getBody(): string {
 		return $this->body;
 	}
 
 	/* Static methods */
 
-	public static function createFromGlobals(Parameters $named_parameters): self {
+	public static function createFromGlobals(?Parameters $named_parameters = null): self {
 		return new self(Get::assemble(), Post::assemble(), Cookie::assemble(), Server::assemble(), $named_parameters, null);
 	}
 

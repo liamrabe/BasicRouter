@@ -15,6 +15,7 @@ class Router {
 	protected static array $controller;
 	protected static array $middleware;
 
+	protected static bool $skip_lifecycle = true;
 	protected static bool $expose_router = true;
 
 	/** @var Route[] $routes */
@@ -188,6 +189,8 @@ class Router {
 				), 404);
 			}
 
+			$request = Request::createFromGlobals();
+
 			if (!isset($response)) {
 				$callback = $route->getCallback();
 
@@ -199,8 +202,8 @@ class Router {
 				}
 
 				$arguments = $route->getParameters(static::getURI());
+				$request->setParameters($arguments);
 
-				$request = Request::createFromGlobals($arguments);
 				$response = new Response();
 
 				if (!method_exists($callback[0] ?? '', $callback[1] ?? '')) {
@@ -215,20 +218,18 @@ class Router {
 				}
 			}
 
-			static::handleOutput($response);
+			static::handleOutput($route, $request, $response);
 		} catch (HttpException|RuntimeException $ex) {
-			$response = call_user_func_array(static::$controller, [
-				$ex
-			]);
+			$response = call_user_func_array(static::$controller, [ $ex ]);
 
-			static::handleOutput($response);
+			static::handleOutput(null, null, $response, true);
 		}
 	}
 
 	/**
 	 * @throws RuntimeException
 	 */
-	protected static function handleOutput(object $response): void {
+	protected static function handleOutput(?Route $route = null, ?Request $request = null, ?object $response = null, bool $is_error = false): void {
 		if (!$response instanceof Response) {
 			throw new RuntimeException(sprintf(
 				"Response has to be instance of class '%s'",
@@ -239,19 +240,24 @@ class Router {
 		/* Process response from controller */
 		http_response_code($response->getStatus());
 
-		static::preHeaders($route, $request, $response);
+		if (self::$skip_lifecycle && !$is_error) {
+			static::preHeaders($route, $request, $response);
+		}
 
 		foreach ($response->getHeaders() as $header => $value) {
 			header(sprintf('%s: %s', $header, $value), true, $response->getStatus());
 		}
 
-		static::postHeaders($route, $request, $response);
-
-		static::preWrite($route, $request, $response);
+		if (self::$skip_lifecycle && !$is_error) {
+			static::postHeaders($route, $request, $response);
+			static::preWrite($route, $request, $response);
+		}
 
 		echo $response->getBody();
 
-		static::postWrite($route, $request, $response);
+		if (self::$skip_lifecycle && !$is_error) {
+			static::postWrite($route, $request, $response);
+		}
 	}
 
 	/** Version handling */
@@ -294,24 +300,28 @@ class Router {
 
 	/** Lifecycle events */
 
+	public static function setSkipLifecycle(bool $skip_lifecycle): void {
+		self::$skip_lifecycle = $skip_lifecycle;
+	}
+
 	/**
 	 * Handle Route, Request & Response before output
 	 */
-	protected static function preWrite(Route $route, Request $request, Response $response): void {}
+	protected static function preWrite(?Route $route = null, ?Request $request = null, ?Response $response = null): void {}
 
 	/**
 	 * Handle Route, Request & Response after output
 	 */
-	protected static function postWrite(Route $route, Request $request, Response $response): void {}
+	protected static function postWrite(?Route $route = null, ?Request $request = null, ?Response $response = null): void {}
 
 	/**
 	 * Handle Route, Request & Response before handling headers
 	 */
-	protected static function preHeaders(Route $route, Request $request, Response $response): void {}
+	protected static function preHeaders(?Route $route = null, ?Request $request = null, ?Response $response = null): void {}
 
 	/**
 	 * Handle Route, Request & Response after handling headers
 	 */
-	protected static function postHeaders(Route $route, Request $request, Response $response): void {}
+	protected static function postHeaders(?Route $route = null, ?Request $request = null, ?Response $response = null): void {}
 
 }
