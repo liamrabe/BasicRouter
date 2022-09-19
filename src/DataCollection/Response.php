@@ -1,11 +1,7 @@
 <?php
 namespace LiamRabe\BasicRouter\DataCollection;
 
-use LiamRabe\BasicRouter\Router as Router;
-
 class Response {
-
-	public const EXPOSE_ROUTER_HEADER = 'X-Powered-By';
 
 	protected array $headers = [
 		'Content-Type' => 'text/html',
@@ -16,10 +12,6 @@ class Response {
 	protected int $status_code = 200;
 
 	public function getHeaders(): array {
-		if (Router::getExposeRouter()) {
-			$this->headers[self::EXPOSE_ROUTER_HEADER] = sprintf('BasicRouter (%s)', Router::getVersion());
-		}
-
 		return $this->headers;
 	}
 

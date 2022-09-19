@@ -1,235 +1,235 @@
 <?php
 namespace LiamRabe\BasicRouter;
 
+use LiamRabe\BasicRouter\DataCollection\RouteCollection;
+use LiamRabe\BasicRouter\Trait\SemanticVersionTrait;
 use LiamRabe\BasicRouter\DataCollection\Response;
 use LiamRabe\BasicRouter\Exception\HttpException;
 use LiamRabe\BasicRouter\DataCollection\Request;
-use JetBrains\PhpStorm\ArrayShape;
+use LiamRabe\BasicRouter\Trait\LifecycleTrait;
+use LiamRabe\BasicRouter\Route\AbstractRoute;
+use LiamRabe\BasicRouter\Route\Route;
 use InvalidArgumentException;
 use RuntimeException;
 
 class Router {
+	use LifecycleTrait, SemanticVersionTrait;
 
 	protected const VERSION = '2.1.2';
 
-	protected static array $controller;
-	protected static array $middleware;
+	private string $route = Route::class;
+	private array $middlewares;
+	private array $controller;
 
-	protected static bool $skip_lifecycle = true;
-	protected static bool $expose_router = true;
+	protected bool $expose_router = true;
 
-	/** @var Route[] $routes */
-	protected static array $routes = [];
-	protected static string $uri = '';
+	protected string $uri = '';
 
-	/** @throws InvalidArgumentException */
-	public static function setMiddleware(string $middleware, string $method): void {
-		if (!class_exists($middleware)) {
-			throw new InvalidArgumentException(sprintf(
-				"Class '%s' doesn't exist",
-				$middleware,
-			));
-		}
-
-		if (!method_exists($middleware, $method)) {
-			throw new InvalidArgumentException(sprintf(
-				"Method '%s' doesn't exist in class %s",
-				$method,
-				$middleware
-			));
-		}
-
-		static::$middleware = [
-			$middleware,
-			$method,
-		];
+	public function setExposeRouter(bool $expose_router): void {
+		$this->expose_router = $expose_router;
 	}
 
-	/** @throws InvalidArgumentException */
-	public static function setErrorController(string $controller, string $method): void {
-		if (!class_exists($controller)) {
-			throw new InvalidArgumentException(sprintf(
-				"Class '%s' doesn't exist",
-				$controller,
-			));
+	/**
+	 * Validate router default value
+	 *
+	 * @throws InvalidArgumentException
+	 */
+	private function validateDefaultValue(string $class, ?string $method = null): void {
+		if (!class_exists($class)) {
+			throw new InvalidArgumentException(sprintf("The class '%s' wasn't found", $class));
 		}
 
-		if (!method_exists($controller, $method)) {
-			throw new InvalidArgumentException(sprintf(
-				"Method '%s' doesn't exist in class %s",
-				$method,
-				$controller
-			));
-		}
-
-		static::$controller = [
-			$controller,
-			$method,
-		];
-	}
-
-	public static function setExposeRouter(bool $expose): void {
-		static::$expose_router = $expose;
-	}
-
-	public static function getExposeRouter(): bool {
-		return static::$expose_router;
-	}
-
-	public static function redirect(string $uri, string $target, int $code = 301): void {
-		if (static::getURI() === $uri) {
-			header(sprintf('Location: %s', $target), true,  $code);
-			exit;
+		if ($method !== null && !method_exists($class, $method)) {
+			throw new InvalidArgumentException(sprintf("The method '%s' in class '%s' doesn't exist", $class, $method));
 		}
 	}
 
-	/** @throws RuntimeException */
-	protected static function route(string $method, string $uri, string|array|callable $callback): Route {
-		if (static::$uri !== '') {
-			$uri = sprintf('%s/%s', static::$uri, ltrim($uri, '/'));
-		}
-
-		$middleware = static::$middleware ?? null;
+	/**
+	 * Validate existence of middleware & error controller before adding route
+	 *
+	 * @throws RuntimeException
+	 */
+	private function validateRouteCreation(): void {
+		$middleware = $this->middlewares ?? null;
 		if (!$middleware) {
 			throw new RuntimeException('Middleware required before creating routes', 500);
 		}
 
-		$controller = static::$controller ?? null;
+		$controller = $this->controller ?? null;
 		if (!$controller) {
 			throw new RuntimeException('Error controller required before creating routes', 500);
 		}
-
-		return static::$routes[] = Route::create($method, $uri, $callback, $middleware[0]);
 	}
 
-	public static function get(string $uri, string|array|callable $callback): Route {
-		return static::route('GET', $uri, $callback);
+	/**
+	 * @throws InvalidArgumentException
+	 */
+	public function setDefaultErrorController(string $class, string $method): void {
+		$this->validateDefaultValue($class, $method);
+
+		$this->controller = [ $class, $method ];
 	}
 
-	public static function put(string $uri, string|array|callable $callback): Route {
-		return static::route('PUT', $uri, $callback);
-	}
+	/**
+	 * @throws InvalidArgumentException
+	 */
+	public function setDefaultMiddleware(string|array $class, string $method = null): void {
+		if (is_array($class)) {
+			foreach ($class as $middleware) {
+				$this->setDefaultMiddleware($middleware[0] ?? '', $middleware[1] ?? '');
+			}
 
-	public static function post(string $uri, string|array|callable $callback): Route {
-		return static::route('POST', $uri, $callback);
-	}
-
-	public static function delete(string $uri, string|array|callable $callback): Route {
-		return static::route('DELETE', $uri, $callback);
-	}
-
-	public static function all(string $uri, string|array|callable $callback): Route {
-		return static::route('ALL', $uri, $callback);
-	}
-
-	public static function group(string $prefix, Callable $group_callable, array $group_middleware = []): void {
-		static::$uri .= $prefix;
-
-		if ($group_middleware !== []) {
-			$cache_middleware = static::$middleware;
-			static::setMiddleware($group_middleware[0] ?? '', $group_middleware[1] ?? '');
+			return;
 		}
 
-		call_user_func($group_callable);
-		static::$uri = rtrim(static::$uri, $prefix);
+		$this->validateDefaultValue($class, $method);
 
-		if ($group_middleware !== []) {
-			static::setMiddleware($cache_middleware[0] ?? '', $cache_middleware[1] ?? '');
-			unset($cache_middleware);
+		$this->middlewares[] = [ $class, $method ];
+	}
+
+	/**
+	 * @throws InvalidArgumentException
+	 */
+	public function setDefaultRoute(string $class): void {
+		$this->validateDefaultValue($class);
+
+		if (!new $class() instanceof AbstractRoute) {
+			throw new InvalidArgumentException("Route has to be an instance of class '%s'", Route::class);
 		}
+
+		$this->route = $class;
 	}
 
-	protected static function getMethod(): string {
-		return $_SERVER['REQUEST_METHOD'];
+	protected function getMethod(): string {
+		return $_SERVER[ 'REQUEST_METHOD' ];
 	}
 
-	protected static function getURI(): string {
-		$parts = explode('?', $_SERVER['REQUEST_URI']);
+	protected function getURI(): string {
+		$parts = explode('?', $_SERVER[ 'REQUEST_URI' ]);
 		return array_shift($parts);
 	}
 
-	/** @return Route[] */
-	public static function getRoutes(): array {
-		return static::$routes;
+	/**
+	 * Redirect user to specified target
+	 */
+	public function redirect(string $uri, string $target, int $code = 301): void {
+		if ($this->getURI() === $uri) {
+			header(sprintf('Location: %s', $target), true, $code);
+			exit;
+		}
 	}
 
-	public static function run(): void {
+	/**
+	 * @throws InvalidArgumentException
+	 */
+	private function route(string $method, string $uri, string|array|callable $callback): AbstractRoute {
+		$this->validateRouteCreation();
+
+		if ($this->uri !== '') {
+			$uri = sprintf('%s/%s', $this->uri, ltrim($uri, '/'));
+		}
+
+		return RouteCollection::addRoute(new $this->route(
+			$method,
+			$uri,
+			$callback,
+			$this->middlewares
+		));
+	}
+
+	public function get(string $uri, string|array|callable $callback): AbstractRoute {
+		return $this->route('GET', $uri, $callback);
+	}
+
+	public function put(string $uri, string|array|callable $callback): AbstractRoute {
+		return $this->route('PUT', $uri, $callback);
+	}
+
+	public function post(string $uri, string|array|callable $callback): AbstractRoute {
+		return $this->route('POST', $uri, $callback);
+	}
+
+	public function delete(string $uri, string|array|callable $callback): AbstractRoute {
+		return $this->route('DELETE', $uri, $callback);
+	}
+
+	public function all(string $uri, string|array|callable $callback): AbstractRoute {
+		return $this->route('ALL', $uri, $callback);
+	}
+
+	public function group(string $prefix, Callable $group_callable, array $group_middlewares = []): void {
+		$this->uri .= $prefix;
+
+		$cache_middlewares = $this->middlewares;
+		$this->setDefaultMiddleware($group_middlewares);
+
+		call_user_func_array($group_callable, [ $this ]);
+
+		$this->setDefaultMiddleware($cache_middlewares);
+		unset($cache_middlewares);
+	}
+
+	public function run(): void {
 		try {
-			$routes = array_filter(static::$routes, static function(Route $route) {
-				return ($route->getMethod() === static::getMethod() || $route->getMethod() === 'ALL');
-			});
+			$routes = RouteCollection::getRoutes($this->getMethod(), $this->getURI());
 
-			/** @var Route[] $matched_routes */
-			$matched_routes = [];
-
-			foreach ($routes as $route) {
-				$route_uri = $route->getRegexURI();
-
-				$uri_match_count = preg_match_all(sprintf('/%s/', $route_uri), static::getURI(), $uri_matches);
-
-				if ($uri_match_count > 0) {
-					foreach ($uri_matches as $uri_match) {
-						if (($uri_match[0] ?? '') === static::getURI()) {
-							$matched_routes[] = $route;
-						}
-					}
-				}
-			}
-
-			unset($route);
-
-			/* Fetch last matched route */
 			/** @var Route $route */
-			$route = end($matched_routes);
+			$route = end($routes);
 
 			if (empty($matched_routes) && is_bool($route) && !$route) {
 				throw new HttpException(sprintf(
 					"The requested URI '%s' doesn't exist",
-					static::getURI(),
+					$this->getURI(),
 				), 404);
 			}
 
 			$request = Request::createFromGlobals();
+			$callback = $route->getCallback();
 
-			if (!isset($response)) {
-				$callback = $route->getCallback();
+			/* Run middleware */
+			$middleware_result = true;
 
-				/* Run middleware */
-				$middleware_result = call_user_func(static::$middleware);
+			foreach ($this->middlewares as $middleware) {
+				$current_middleware_result = call_user_func($middleware);
 
-				if (!$middleware_result) {
-					return;
-				}
-
-				$arguments = $route->getParameters(static::getURI());
-				$request->setParameters($arguments);
-
-				$response = new Response();
-
-				if (!method_exists($callback[0] ?? '', $callback[1] ?? '')) {
-					throw new RuntimeException(sprintf(
-						"Callback method '%s' doesn't exist in class %s",
-						$callback[1] ?? '',
-						$callback[0] ?? '',
-					), 500);
-				} else {
-					/** @var Response $response */
-					$response = call_user_func_array($callback, [$request, $response]);
+				if (!$current_middleware_result) {
+					$middleware_result = false;
 				}
 			}
 
-			static::handleOutput($route, $request, $response);
-		} catch (HttpException|RuntimeException $ex) {
-			$response = call_user_func_array(static::$controller, [ $ex ]);
+			if (!$middleware_result) {
+				return;
+			}
 
-			static::handleOutput(null, null, $response, true);
+			$arguments = $route->getParameters($this->getURI());
+			$request->setParameters($arguments);
+
+			$response = new Response();
+
+			if (!method_exists($callback[0] ?? '', $callback[1] ?? '')) {
+				throw new RuntimeException(sprintf(
+					"Callback method '%s' doesn't exist in class %s",
+					$callback[1] ?? '',
+					$callback[0] ?? '',
+				), 500);
+			} else {
+				/** @var Response $response */
+				$response = call_user_func_array($callback, [$request, $response]);
+			}
+
+			$this->handleOutput($route, $request, $response);
+
+		} catch (HttpException|RuntimeException $ex) {
+			$response = call_user_func_array($this->controller, [ $ex ]);
+
+			$this->handleOutput(null, null, $response, true);
 		}
 	}
 
 	/**
 	 * @throws RuntimeException
 	 */
-	protected static function handleOutput(?Route $route = null, ?Request $request = null, ?object $response = null, bool $is_error = false): void {
+	protected function handleOutput(?Route $route = null, ?Request $request = null, ?object $response = null, bool $is_error = false): void {
 		if (!$response instanceof Response) {
 			throw new RuntimeException(sprintf(
 				"Response has to be instance of class '%s'",
@@ -240,88 +240,24 @@ class Router {
 		/* Process response from controller */
 		http_response_code($response->getStatus());
 
-		if (!self::$skip_lifecycle && !$is_error) {
-			static::preHeaders($route, $request, $response);
+		if (!$this->skip_lifecycle && !$is_error) {
+			$this->preHeaders($route, $request, $response);
 		}
 
 		foreach ($response->getHeaders() as $header => $value) {
 			header(sprintf('%s: %s', $header, $value), true, $response->getStatus());
 		}
 
-		if (!self::$skip_lifecycle && !$is_error) {
-			static::postHeaders($route, $request, $response);
-			static::preWrite($route, $request, $response);
+		if (!$this->skip_lifecycle && !$is_error) {
+			$this->postHeaders($route, $request, $response);
+			$this->preWrite($route, $request, $response);
 		}
 
 		echo $response->getBody();
 
-		if (!self::$skip_lifecycle && !$is_error) {
-			static::postWrite($route, $request, $response);
+		if (!$this->skip_lifecycle && !$is_error) {
+			$this->postWrite($route, $request, $response);
 		}
 	}
-
-	/** Version handling */
-
-	#[ArrayShape([
-		'major' => 'int',
-		'minor' => 'int',
-		'patch' => 'int',
-	])]
-	public static function getSemVer(): array {
-		$semantic_version = explode('.', static::VERSION);
-
-		return [
-			'major' => (int) $semantic_version[0] ?? 0,
-			'minor' => (int) $semantic_version[1] ?? 0,
-			'patch' => (int) $semantic_version[2] ?? 0,
-		];
-	}
-
-	public static function getMajor():int {
-		return static::getSemVer()['major'];
-	}
-
-	public static function getMinor(): int {
-		return static::getSemVer()['minor'];
-	}
-
-	public static function getPatch(): int {
-		return static::getSemVer()['patch'];
-	}
-
-	public static function getVersion(): string {
-		return sprintf(
-			'v%d.%d.%d',
-			static::getMajor(),
-			static::getMinor(),
-			static::getPatch(),
-		);
-	}
-
-	/** Lifecycle events */
-
-	public static function setSkipLifecycle(bool $skip_lifecycle): void {
-		self::$skip_lifecycle = $skip_lifecycle;
-	}
-
-	/**
-	 * Handle Route, Request & Response before output
-	 */
-	protected static function preWrite(?Route $route = null, ?Request $request = null, ?Response $response = null): void {}
-
-	/**
-	 * Handle Route, Request & Response after output
-	 */
-	protected static function postWrite(?Route $route = null, ?Request $request = null, ?Response $response = null): void {}
-
-	/**
-	 * Handle Route, Request & Response before handling headers
-	 */
-	protected static function preHeaders(?Route $route = null, ?Request $request = null, ?Response $response = null): void {}
-
-	/**
-	 * Handle Route, Request & Response after handling headers
-	 */
-	protected static function postHeaders(?Route $route = null, ?Request $request = null, ?Response $response = null): void {}
 
 }
